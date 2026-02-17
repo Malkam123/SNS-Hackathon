@@ -1,0 +1,12 @@
+[
+  {
+    "po_number": "PO1001",
+    "vendor_name": "ABC Supplies",
+    "amount": 12000
+  },
+  {
+    "po_number": "PO1002",
+    "vendor_name": "XYZ Traders",
+    "amount": 8000
+  }
+]
