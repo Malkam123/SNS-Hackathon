@@ -1,74 +1,66 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="Invoice Automation", layout="centered")
+st.title("📄 AI Invoice Automation Dashboard- Auto Gen AI")
 
-st.title("📧 Email to ERP Invoice Automation")
+# ------------------ MANUAL UPLOAD ------------------
 
-backend_url = "http://127.0.0.1:8000"
-
-# -------- OPTION 1: Process Email --------
-st.subheader("Process Invoices from Email")
-
-if st.button("Fetch & Process Emails"):
-    with st.spinner("Processing emails..."):
-        response = requests.get(f"{backend_url}/process-emails")
-
-        if response.status_code == 200:
-            data = response.json()
-            results = data.get("results", [])
-
-            if results:
-                for invoice in results:
-                    st.success("Invoice Processed ✅")
-
-                    st.write("Invoice Number:", invoice.get("invoice_number"))
-                    st.write("Vendor:", invoice.get("vendor"))
-                    st.write("Amount:", invoice.get("amount"))
-                    st.write("Status:", invoice.get("status"))
-                    st.divider()
-            else:
-                st.warning("No invoices found.")
-        else:
-            st.error("Error processing emails")
-
-
-# -------- OPTION 2: Manual Upload --------
-st.subheader("Upload Invoice Manually")
-
-uploaded_file = st.file_uploader("Drag & Drop Invoice PDF", type=["pdf"])
+uploaded_file = st.file_uploader("Upload Invoice (PDF)", type=["pdf"])
 
 if uploaded_file:
-    if st.button("Process Uploaded Invoice"):
-        with st.spinner("Processing invoice..."):
+    with st.spinner("Processing Invoice..."):
+        files = {"file": uploaded_file.getvalue()}
+        response = requests.post("http://127.0.0.1:8000/process-invoice", files=files)
 
-            files = {"file": uploaded_file.getvalue()}
-            response = requests.post(
-                f"{backend_url}/process-invoice",
-                files={"file": uploaded_file}
-            )
+        if response.status_code == 200:
+            result = response.json()
+        else:
+            st.error("Backend Error")
+            st.write(response.text)
+            st.stop()
 
-            if response.status_code == 200:
-                invoice = response.json()
+    st.success("Processing Complete")
 
-                st.success("Invoice Processed ✅")
+    st.subheader("Extracted Details")
+    st.write("Invoice Number:", result.get("invoice_data", {}).get("invoice_number"))
+    st.write("Vendor:", result.get("invoice_data", {}).get("vendor"))
+    st.write("Amount:", result.get("invoice_data", {}).get("amount"))
+    st.write("PO Status:", result.get("po_status"))
+    st.write("ERP Status:", result.get("erp_status"))
 
-                st.write("Invoice Number:", invoice.get("invoice_number"))
-                st.write("Vendor:", invoice.get("vendor"))
-                st.write("Amount:", invoice.get("amount"))
-                st.write("Status:", invoice.get("status"))
+# ------------------ EMAIL CHECK BUTTON ------------------
 
-            else:
-                st.error("Processing failed")
+st.divider()
 
+if st.button("📧 Check Email for Invoices"):
 
-# -------- LOGS SECTION --------
-st.subheader("Logs")
+    with st.spinner("Scanning inbox..."):
+        response = requests.get("http://127.0.0.1:8000/process-emails")
 
-if st.button("Check Backend Health"):
-    try:
-        r = requests.get(f"{backend_url}/docs")
-        if r.status_code == 200:
-            st.success("Backend is running ✅")
-    except:
-        st.error("Backend not running ❌")
+    if response.status_code == 200:
+
+        result = response.json()
+
+        invoice = result.get("invoice_data", {})
+        po_status = result.get("po_status", {})
+        erp_status = result.get("erp_status", {})
+
+        st.success("Invoice found and processed!")
+
+        st.subheader("📄 Extracted Details")
+        st.write("Invoice Number:", invoice.get("invoice_number"))
+        st.write("Vendor:", invoice.get("vendor"))
+        st.write("Amount:", invoice.get("amount"))
+        st.write("PO Number:", invoice.get("po_number"))
+
+        st.subheader("📊 PO Validation")
+        st.write("PO Match:", po_status.get("po_match"))
+        st.write("PO Status:", po_status.get("status"))
+
+        st.subheader("🏢 ERP Status")
+        st.write("ERP ID:", erp_status.get("erp_id"))
+        st.write("ERP Status:", erp_status.get("erp_status"))
+
+    else:
+        st.error("Backend Error")
+        st.write(response.text)

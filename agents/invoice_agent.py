@@ -4,30 +4,32 @@ class InvoiceAgent:
 
     def process_invoice(self, file_path: str):
         try:
-            # Extract text from PDF
             with pdfplumber.open(file_path) as pdf:
                 text = ""
                 for page in pdf.pages:
-                    text += page.extract_text()
-
-            # 🔹 Dummy extraction logic (you can improve later)
-            invoice_number = "Not Found"
-            vendor = "Unknown Vendor"
-            amount = "0"
-            status = "Approved"
-
-            if "Invoice" in text:
-                invoice_number = "INV-001"
-
-            if "Total" in text:
-                amount = "15000"
-
-            return {
-                "invoice_number": invoice_number,
-                "vendor": vendor,
-                "amount": amount,
-                "status": status
+                    extracted = page.extract_text()
+                    if extracted:
+                        text += extracted + "\n"
+                    print("------ RAW PDF TEXT ------")
+                    print(text)
+                    print("--------------------------")
+            invoice_data = {
+                "invoice_number": self.get_value(text, "Invoice Number"),
+                "vendor": self.get_value(text, "Vendor"),
+                "amount": self.get_value(text, "Total Amount"),
+                "po_number": self.get_value(text, "PO Number"),
+                "status": "Processed"
             }
+
+            return invoice_data
 
         except Exception as e:
             return {"error": str(e)}
+
+    def get_value(self, text, field_name):
+        for line in text.split("\n"):
+            if field_name.lower() in line.lower():
+                parts = line.split(":")
+                if len(parts) > 1:
+                    return parts[1].strip()
+        return None
