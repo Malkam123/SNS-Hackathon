@@ -1,7 +1,9 @@
-openai==1.83.0
-fastapi==0.111.0
-uvicorn==0.30.1
-python-dotenv==1.0.1
-pdfplumber==0.11.4
-pandas==2.2.2
-imapclient==3.0.1
+streamlit
+fastapi
+uvicorn
+langgraph
+pdfplumber
+reportlab
+python-dotenv
+requests
+openai
